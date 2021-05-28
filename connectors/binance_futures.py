@@ -1,20 +1,40 @@
+from urllib.parse import urlencode
+import hashlib
+import hmac
 import requests
 import logging
+import time
 
 logger = logging.getLogger()
 
 class BinanceFuturesClient:
-    def __init__(self,is_testnet):
+    def __init__(self,is_testnet,public_key,secret_key):
+        logger.info("Binance futures client created")
         if is_testnet:
             self.base_url = "https://testnet.binancefuture.com"
         else:
             self.base_url = "https://fapi.binance.com"
 
+        self.public_key = public_key
+        self.secret_key = secret_key
+
+        self.headers = {"X-MBX-APIKEY":self.public_key}
         self.prices = dict()
+
+    def generate_signature(self,data):
+        return hmac.new(self.secret_key.encode(),urlencode(data).encode(),hashlib.sha256).hexdigest()
+
+    def generate_timestamp(self):
+        return int(time.time() * 1000)
 
     def make_request(self,method,endpoint,data):
         if method in ["GET","get"]:
-            response = requests.get(self.base_url + endpoint,params=data)
+            response = requests.get(self.base_url + endpoint,params=data,headers=self.headers)
+        elif method in ["POST","post"]:
+            response = requests.post(self.base_url + endpoint,params=data,headers=self.headers)
+        elif method in ["DELETE","delete"]:
+            response = requests.delete(self.base_url + endpoint,params=data,headers=self.headers)
+
         else:
             raise ValueError()
 
@@ -67,3 +87,66 @@ class BinanceFuturesClient:
                 candles.append(c[0],float(c[1]),float(c[2]),float(c[3]),float(c[4]),float(c[5]))
 
         return candles
+
+    def place_order(self,symbol,side,quantity,order_type,price=None,tif=None):
+        endpoint = "/fapi/v1/order"
+
+        data = dict()
+        data["symbol"] = symbol
+        data["side"] = side
+        data["quantity"] = quantity
+        data["type"] = order_type
+
+        if price is not None:
+            data["price"] = price
+
+        if tif is not None:
+            data["timeInForce"] = tif
+
+        data["timestamp"] = self.generate_timestamp()
+        data["signature"] = self.generate_signature(data)
+
+        order_status = self.make_request("POST",endpoint,data)
+
+        return order_status
+
+    def cancel_order(self,symbol,order_id):
+        endpoint = "/fapi/v1/order"
+
+        data = dict()
+        data["symbol"] = symbol
+        data["orderId"] = order_id
+
+        data["timestamp"] = self.generate_timestamp()
+        data["signature"] = self.generate_signature(data)
+
+        order_status = self.make_request("DELETE",endpoint,data)
+
+        return order_status
+
+    def get_balance(self):
+        endpoint = "/fapi/v1/account"
+        data = dict()
+        data["timestamp"] = self.generate_timestamp()
+        data["signature"] = self.generate_signature(data)
+
+        account_data = self.make_request("GET",endpoint,data)
+
+        balances = dict()
+        if account_data is not None:
+            for a in account_data["assets"]:
+                balances[a["asset"]] = a
+
+        return balances
+
+    def get_order_status(self,symbol,order_id):
+        endpoint = "/fapi/v1/order"
+        data = dict()
+        data["timestamp"] = self.generate_timestamp()
+        data["symbol"] = symbol
+        data["orderId"] = order_id
+        data["signature"] = self.generate_signature(data)
+
+        order_status = self.make_request("GET",endpoint,data)
+
+        return order_status

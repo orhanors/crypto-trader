@@ -1,6 +1,8 @@
 import tkinter as tk
 import logging
+from dotenv import load_dotenv,dotenv_values
 from connectors.bitmex import  get_contracts
+from connectors.binance_futures import BinanceFuturesClient
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -19,21 +21,16 @@ logger.addHandler(file_handler)
 
 
 if __name__ == "__main__":
-    bitmex_contracts = get_contracts()
+    load_dotenv()
+
+    binance_testnet_api_key = dotenv_values(".env").get("BINANCE_TESTNET_API_KEY")
+    binance_testnet_api_secret = dotenv_values(".env").get("BINANCE_TESTNET_API_SECRET")
+
+    binance = BinanceFuturesClient(True, binance_testnet_api_key, binance_testnet_api_secret)
+
+    print(binance.get_balance())
+
+
 
     root = tk.Tk()  # main window
-    root.configure(bg="gray12")
-
-    i = 0
-    j= 0
-    for contract in bitmex_contracts:
-        label_widget = tk.Label(root,text=contract,bg="gray12",fg="SteelBlue",width=15)
-        label_widget.grid(row=i,column=j,sticky="ew")
-
-        if i == 4:
-            j = j+1
-            i = 0
-        else:
-            i = i+1
-
     root.mainloop()  # infinite loop waits for user interaction
