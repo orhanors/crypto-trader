@@ -43,6 +43,12 @@ class Contract:
         self.price_decimals = contract_info["pricePrecision"]
         self.quantity_decimals = contract_info["quantityPrecision"]
 
+"""
+Order Status Data Model,
+
+Takes "order status obj" and extracts necessary data
+used endpoint ---> /fapi/v1/order
+"""
 
 class OrderStatus:
     def __init__(self,order_info):

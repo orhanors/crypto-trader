@@ -12,7 +12,7 @@ import json
 logger = logging.getLogger()
 
 class BinanceFuturesClient:
-    def __init__(self,is_testnet,public_key,secret_key):
+    def __init__(self,is_testnet: bool,public_key: str,secret_key: str):
         logger.info("Binance futures client created")
         if is_testnet:
             self.base_url = "https://testnet.binancefuture.com"
@@ -21,14 +21,16 @@ class BinanceFuturesClient:
             self.base_url = "https://fapi.binance.com"
             self.wss_url = "wss://fstream.binance.com/ws"
         
+        self.headers = {"X-MBX-APIKEY":self.public_key}
         self.public_key = public_key
         self.secret_key = secret_key
         
         self.contracts = self.get_contracts()
         self.balances = self.get_balance()
-        self.id = 1
-        self.headers = {"X-MBX-APIKEY":self.public_key}
+
         self.prices = dict()
+
+        self.id = 1
         self.ws = None
 
         #multithreading to run websocket connection
@@ -123,6 +125,9 @@ class BinanceFuturesClient:
 
         order_status = self.make_request("POST",endpoint,data)
 
+        if order_status is not None:
+            order_status = OrderStatus(order_status)
+
         return order_status
 
     def cancel_order(self,symbol,order_id):
@@ -136,6 +141,9 @@ class BinanceFuturesClient:
         data["signature"] = self.generate_signature(data)
 
         order_status = self.make_request("DELETE",endpoint,data)
+        
+        if order_status is not None:
+            order_status = OrderStatus(order_status)
 
         return order_status
 
@@ -165,6 +173,9 @@ class BinanceFuturesClient:
         data["signature"] = self.generate_signature(data)
 
         order_status = self.make_request("GET",endpoint,data)
+        
+        if order_status is not None:
+            order_status = OrderStatus(order_status)
 
         return order_status
 
