@@ -27,8 +27,12 @@ if __name__ == "__main__":
     binance_testnet_api_secret = dotenv_values(".env").get("BINANCE_TESTNET_API_SECRET")
 
     binance = BinanceFuturesClient(True, binance_testnet_api_key, binance_testnet_api_secret)
+    
+    candles = binance.get_historical_candles()
+    
 
     print(binance.get_balance())
+
 
 
     root = tk.Tk()  # main window
