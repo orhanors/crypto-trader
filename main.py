@@ -31,6 +31,5 @@ if __name__ == "__main__":
     print(binance.get_balance())
 
 
-
     root = tk.Tk()  # main window
     root.mainloop()  # infinite loop waits for user interaction
