@@ -28,7 +28,7 @@ if __name__ == "__main__":
 
     binance = BinanceFuturesClient(True, binance_testnet_api_key, binance_testnet_api_secret)
 
-   
+    print(binance.get_balance())
 
 
     root = tk.Tk()  # main window

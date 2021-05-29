@@ -1,4 +1,5 @@
 from urllib.parse import urlencode
+from models import *
 import hashlib
 import hmac
 import requests
@@ -6,6 +7,7 @@ import logging
 import time
 import websocket
 import threading
+import json
 
 logger = logging.getLogger()
 
@@ -18,13 +20,17 @@ class BinanceFuturesClient:
         else:
             self.base_url = "https://fapi.binance.com"
             self.wss_url = "wss://fstream.binance.com/ws"
-
+        
         self.public_key = public_key
         self.secret_key = secret_key
-
+        
+        self.contracts = self.get_contracts()
+        self.balances = self.get_balance()
+        self.id = 1
         self.headers = {"X-MBX-APIKEY":self.public_key}
         self.prices = dict()
-        
+        self.ws = None
+
         #multithreading to run websocket connection
         t = threading.Thread(target=self.start_ws)
         t.start()
@@ -53,13 +59,14 @@ class BinanceFuturesClient:
             return None
 
     def get_contracts(self):
-        exchange_info = self.make_request("GET","/fapi/v1/exchangeInfo",None)
+        endpoint = "/fapi/v1/exchangeInfo"
+        exchange_info = self.make_request("GET",endpoint,None)
 
         contracts = dict()
 
         if exchange_info is not None:
             for contract_data in exchange_info["symbols"]:
-                contracts[contract_data["pair"]] = contract_data
+                contracts[contract_data["pair"]] = Contract(contract_data)
 
         return contracts
 
@@ -92,7 +99,7 @@ class BinanceFuturesClient:
 
         if raw_candles is not None:
             for c in raw_candles:
-                candles.append(c[0],float(c[1]),float(c[2]),float(c[3]),float(c[4]),float(c[5]))
+                candles.append(Candle(c))
 
         return candles
 
@@ -143,8 +150,9 @@ class BinanceFuturesClient:
         balances = dict()
         if account_data is not None:
             for a in account_data["assets"]:
-                balances[a["asset"]] = a
-
+                balances[a["asset"]] = Balance(a)
+        
+        print("YEAHH::",balances["BNB"].wallet_balance)
         return balances
 
     def get_order_status(self,symbol,order_id):
@@ -162,12 +170,14 @@ class BinanceFuturesClient:
 
 
     def start_ws(self):
-        ws = websocket.WebSocketApp(self.wss_url,on_open=self.on_open,on_close=self.on_close,on_error=self.on_error,on_message=self.on_message)
+        self.ws = websocket.WebSocketApp(self.wss_url,on_open=self.on_open,on_close=self.on_close,on_error=self.on_error,on_message=self.on_message)
 
-        ws.run_forever()
+        self.ws.run_forever()
 
     def on_open(self,ws):
         logger.info("Binance webSocket connection opened")
+
+        self.subscribe_channel("BTCUSDT")
     
     def on_close(self,ws):
         logger.warning("Binance websocket connection closed")
@@ -176,4 +186,30 @@ class BinanceFuturesClient:
         logger.error("Binance websokcet connection error: %s",msg)
 
     def on_message(self,ws,msg):
-        print(msg)
+        #print(msg)
+
+        data = json.loads(msg)
+
+        if "e" in data:
+            if data["e"] == "bookTicker":
+                symbol = data["s"]
+
+                if symbol not in self.prices:
+                    self.prices[symbol] = {"bid": float(data["b"]),"ask":float(data["a"])}
+
+                else:
+                    self.prices[symbol]["bid"] = float(data["b"])
+                    self.prices[symbol]["ask"] = float(data["a"])
+                
+                print(self.prices[symbol])
+
+    def subscribe_channel(self,symbol):
+        data = dict()
+        data["method"] = "SUBSCRIBE"
+        data["params"] = []
+        data["params"].append(symbol.lower() + "@bookTicker")
+        data["id"] = self.id
+        
+        self.ws.send(json.dumps(data))
+
+        self.id += 1
