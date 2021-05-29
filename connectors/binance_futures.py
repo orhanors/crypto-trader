@@ -4,6 +4,8 @@ import hmac
 import requests
 import logging
 import time
+import websocket
+import threading
 
 logger = logging.getLogger()
 
@@ -12,14 +14,20 @@ class BinanceFuturesClient:
         logger.info("Binance futures client created")
         if is_testnet:
             self.base_url = "https://testnet.binancefuture.com"
+            self.wss_url = "wss://stream.binancefuture.com/ws"
         else:
             self.base_url = "https://fapi.binance.com"
+            self.wss_url = "wss://fstream.binance.com/ws"
 
         self.public_key = public_key
         self.secret_key = secret_key
 
         self.headers = {"X-MBX-APIKEY":self.public_key}
         self.prices = dict()
+        
+        #multithreading to run websocket connection
+        t = threading.Thread(target=self.start_ws)
+        t.start()
 
     def generate_signature(self,data):
         return hmac.new(self.secret_key.encode(),urlencode(data).encode(),hashlib.sha256).hexdigest()
@@ -140,6 +148,7 @@ class BinanceFuturesClient:
         return balances
 
     def get_order_status(self,symbol,order_id):
+
         endpoint = "/fapi/v1/order"
         data = dict()
         data["timestamp"] = self.generate_timestamp()
@@ -150,3 +159,21 @@ class BinanceFuturesClient:
         order_status = self.make_request("GET",endpoint,data)
 
         return order_status
+
+
+    def start_ws(self):
+        ws = websocket.WebSocketApp(self.wss_url,on_open=self.on_open,on_close=self.on_close,on_error=self.on_error,on_message=self.on_message)
+
+        ws.run_forever()
+
+    def on_open(self,ws):
+        logger.info("Binance webSocket connection opened")
+    
+    def on_close(self,ws):
+        logger.warning("Binance websocket connection closed")
+
+    def on_error(self,ws,msg):
+        logger.error("Binance websokcet connection error: %s",msg)
+
+    def on_message(self,ws,msg):
+        print(msg)
