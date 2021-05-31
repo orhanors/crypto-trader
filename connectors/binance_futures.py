@@ -22,9 +22,9 @@ class BinanceFuturesClient:
             self._base_url = "https://fapi.binance.com"
             self._wss_url = "wss://fstream.binance.com/ws"
         
-        self._headers = {"X-MBX-APIKEY":self._public_key}
         self._public_key = public_key
         self._secret_key = secret_key
+        self._headers = {"X-MBX-APIKEY":self._public_key}
         
         self.contracts = self.get_contracts()
         self.balances = self.get_balance()
@@ -80,7 +80,7 @@ class BinanceFuturesClient:
         contracts = dict()
         if exchange_info is not None:
             for contract_data in exchange_info["symbols"]:
-                contracts[contract_data["pair"]] = Contract(contract_data)
+                contracts[contract_data["pair"]] = Contract(contract_data, "binance")
 
         return contracts
 
@@ -173,7 +173,7 @@ class BinanceFuturesClient:
         balances = dict()
         if account_data is not None:
             for a in account_data["assets"]:
-                balances[a["asset"]] = Balance(a)
+                balances[a["asset"]] = Balance(a,"binance")
         
         #print("YEAHH::",balances["BNB"].wallet_balance)
         return balances

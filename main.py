@@ -1,8 +1,10 @@
 import tkinter as tk
 import logging
 from dotenv import load_dotenv,dotenv_values
-from connectors.bitmex import  get_contracts
+from connectors.bitmex import  BitmexClient
 from connectors.binance_futures import BinanceFuturesClient
+
+
 
 logger = logging.getLogger()
 logger.setLevel(logging.DEBUG)
@@ -26,12 +28,16 @@ if __name__ == "__main__":
     binance_testnet_api_key = dotenv_values(".env").get("BINANCE_TESTNET_API_KEY")
     binance_testnet_api_secret = dotenv_values(".env").get("BINANCE_TESTNET_API_SECRET")
 
-    binance = BinanceFuturesClient(True, binance_testnet_api_key, binance_testnet_api_secret)
-    
-    candles = binance.get_historical_candles()
+    bitmex_testnet_api_key = dotenv_values(".env").get("BITMEX_TESTNET_API_KEY")
+    bitmex_testnet_api_secret = dotenv_values(".env").get("BITMEX_TESTNET_API_SECRET")
     
 
-    print(binance.get_balance())
+    #binance = BinanceFuturesClient(True, binance_testnet_api_key, binance_testnet_api_secret)
+    
+    bitmex = BitmexClient(True,bitmex_testnet_api_key,bitmex_testnet_api_secret)
+    print(bitmex.get_balances())
+
+    #print(binance.get_balance())
 
 
 
