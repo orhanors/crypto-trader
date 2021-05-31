@@ -140,7 +140,7 @@ class BinanceFuturesClient:
         order_status = self._make_request("POST",endpoint,data)
 
         if order_status is not None:
-            order_status = OrderStatus(order_status)
+            order_status = OrderStatus(order_status,"binance")
 
         return order_status
 
@@ -157,7 +157,7 @@ class BinanceFuturesClient:
         order_status = self._make_request("DELETE",endpoint,data)
         
         if order_status is not None:
-            order_status = OrderStatus(order_status)
+            order_status = OrderStatus(order_status,"binance")
 
         return order_status
 
@@ -190,7 +190,7 @@ class BinanceFuturesClient:
         order_status = self._make_request("GET",endpoint,data)
         
         if order_status is not None:
-            order_status = OrderStatus(order_status)
+            order_status = OrderStatus(order_status,"binance")
 
         return order_status
 
