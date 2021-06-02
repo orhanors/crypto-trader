@@ -32,10 +32,10 @@ if __name__ == "__main__":
     bitmex_testnet_api_secret = dotenv_values(".env").get("BITMEX_TESTNET_API_SECRET")
     
 
-    #binance = BinanceFuturesClient(True, binance_testnet_api_key, binance_testnet_api_secret)
+    binance = BinanceFuturesClient(True, binance_testnet_api_key, binance_testnet_api_secret)
     
-    bitmex = BitmexClient(True,bitmex_testnet_api_key,bitmex_testnet_api_secret)
-    print(bitmex.get_balances())
+    # bitmex = BitmexClient(True,bitmex_testnet_api_key,bitmex_testnet_api_secret)
+    # print(bitmex.get_balances())
 
     #print(binance.get_balance())
 

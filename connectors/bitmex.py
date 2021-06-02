@@ -145,8 +145,8 @@ class BitmexClient:
         candles = []
 
         if raw_candles is not None:
-            for c in raw_candles:
-                candles.append(Candle(c,"bitmex"))
+            for c in reversed(raw_candles):
+                candles.append(Candle(c,timeframe,"bitmex"))
 
         return candles
 
@@ -157,11 +157,11 @@ class BitmexClient:
         data = dict()
         data["symbol"] = contract.symbol
         data["side"] = side.capitalize()
-        data["orderQty"] = quantity
+        data["orderQty"] = round(quantity / contract.lot_size) * contract.lot_size
         data["ordType"] = order_type.capitalize
 
         if price is not None:
-            data["price"] = price
+            data["price"] = round(round(price / contract.tick_size) * contract.tick_size,8)
 
         if tif is not None:
             data["tif"] = tif
@@ -205,3 +205,67 @@ class BitmexClient:
             for order in order_status:
                 if order["orderID"] == order_id:
                     return OrderStatus(order,"bitmex")
+
+    
+    def _start_ws(self):
+        """
+        Starts websocket connection
+        If it fails when creating forever loop, waits 2 secs and restarts the loop again
+        """
+        self._ws = websocket.WebSocketApp(self._wss_url,on_open=self._on_open,on_close=self._on_close,on_error=self._on_error,on_message=self._on_message)
+
+        while True:
+            try:
+                self._ws.run_forever()
+
+            except Exception as e:
+                logger.error("Bitmex websocket error: %s",e)
+            
+            time.sleep(2)
+
+    def _on_open(self,ws):
+        logger.info("Bitmex webSocket connection opened")
+
+        #we subscribe whole feed
+        self.subscribe_channel("instrument")
+    
+    def _on_close(self,ws):
+        logger.warning("Bitmex websocket connection closed")
+
+    def _on_error(self,ws,msg: str):
+        logger.error("Bitmex websokcet connection error: %s",msg)
+
+    def _on_message(self,ws,msg: str):
+        #print(msg)
+
+        data = json.loads(msg)
+
+        if "table" in data:
+            if data["table"] == "instrument":
+                for d in data["data"]:
+                    symbol = d["symbol"]
+
+                    if symbol not in self.prices:
+                        self.prices[symbol] = {"bid": None,"ask":None}
+
+                    if "bidPrice" in d:
+                        self.prices[symbol]["bid"] = d["bidPrice"]
+                    if "askPrice" in d:
+                        self.prices[symbol]["ask"] = d["askPrice"]
+                    
+                    print(self.prices[symbol])
+
+    def subscribe_channel(self,topic:str):
+        data = dict()
+        data["op"] = "subscribe"
+        data["args"] = []
+       
+        data["args"].append(topic)
+        
+        
+        try:
+            self._ws.send(json.dumps(data))
+        except Exception as e:
+            logger.error("Websocket error while subscribing to %s: %s",topic,e)
+
+       
