@@ -34,10 +34,15 @@ class BinanceFuturesClient:
         self._ws_id = 1
         self._ws = None
 
+        self.logs = []
         #multithreading to run websocket connection
         t = threading.Thread(target=self._start_ws)
         t.start()
-
+    
+    def _add_log(self,msg: str):
+        logger.info("%s",msg)
+        self.logs.append({"log":msg, "displayed":False})
+        
     def _generate_signature(self,data: typing.Dict) -> str:
         return hmac.new(self._secret_key.encode(),urlencode(data).encode(),hashlib.sha256).hexdigest()
 

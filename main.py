@@ -3,7 +3,7 @@ import logging
 from dotenv import load_dotenv,dotenv_values
 from connectors.bitmex import  BitmexClient
 from connectors.binance_futures import BinanceFuturesClient
-
+from interface.root_component import Root
 
 
 logger = logging.getLogger()
@@ -34,12 +34,12 @@ if __name__ == "__main__":
 
     binance = BinanceFuturesClient(True, binance_testnet_api_key, binance_testnet_api_secret)
     
-    # bitmex = BitmexClient(True,bitmex_testnet_api_key,bitmex_testnet_api_secret)
+    bitmex = BitmexClient(True,bitmex_testnet_api_key,bitmex_testnet_api_secret)
     # print(bitmex.get_balances())
 
     #print(binance.get_balance())
 
 
 
-    root = tk.Tk()  # main window
+    root = Root(binance,bitmex)  # main window
     root.mainloop()  # infinite loop waits for user interaction

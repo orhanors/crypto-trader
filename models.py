@@ -48,7 +48,7 @@ class Candle:
 def tick_to_decimal(tick_size:float) -> int:
     tick_size_str = "{0:.8f}".format(tick_size)
 
-    while tick_size_str[-10] == "0":
+    while tick_size_str[-1] == "0":
         tick_size_str = tick_size_str[:-1]
     
     split_tick = tick_size_str.split(".")
