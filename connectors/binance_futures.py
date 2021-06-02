@@ -22,9 +22,9 @@ class BinanceFuturesClient:
             self._base_url = "https://fapi.binance.com"
             self._wss_url = "wss://fstream.binance.com/ws"
         
-        self._headers = {"X-MBX-APIKEY":self._public_key}
         self._public_key = public_key
         self._secret_key = secret_key
+        self._headers = {"X-MBX-APIKEY":self._public_key}
         
         self.contracts = self.get_contracts()
         self.balances = self.get_balance()
@@ -80,7 +80,7 @@ class BinanceFuturesClient:
         contracts = dict()
         if exchange_info is not None:
             for contract_data in exchange_info["symbols"]:
-                contracts[contract_data["pair"]] = Contract(contract_data)
+                contracts[contract_data["pair"]] = Contract(contract_data, "binance")
 
         return contracts
 
@@ -115,7 +115,7 @@ class BinanceFuturesClient:
         candles = []
         if raw_candles is not None:
             for c in raw_candles:
-                candles.append(Candle(c))
+                candles.append(Candle(c,interval,"binance"))
 
         return candles
 
@@ -125,11 +125,11 @@ class BinanceFuturesClient:
         data = dict()
         data["symbol"] = contract.symbol
         data["side"] = side
-        data["quantity"] = quantity
+        data["quantity"] = round(round(quantity / contract.lot_size) * contract.lot_size,8)
         data["type"] = order_type
 
         if price is not None:
-            data["price"] = price
+            data["price"] = round(round(price / contract.tick_size) * contract.tick_size,8)
 
         if tif is not None:
             data["timeInForce"] = tif
@@ -140,7 +140,7 @@ class BinanceFuturesClient:
         order_status = self._make_request("POST",endpoint,data)
 
         if order_status is not None:
-            order_status = OrderStatus(order_status)
+            order_status = OrderStatus(order_status,"binance")
 
         return order_status
 
@@ -157,7 +157,7 @@ class BinanceFuturesClient:
         order_status = self._make_request("DELETE",endpoint,data)
         
         if order_status is not None:
-            order_status = OrderStatus(order_status)
+            order_status = OrderStatus(order_status,"binance")
 
         return order_status
 
@@ -173,7 +173,7 @@ class BinanceFuturesClient:
         balances = dict()
         if account_data is not None:
             for a in account_data["assets"]:
-                balances[a["asset"]] = Balance(a)
+                balances[a["asset"]] = Balance(a,"binance")
         
         #print("YEAHH::",balances["BNB"].wallet_balance)
         return balances
@@ -190,7 +190,7 @@ class BinanceFuturesClient:
         order_status = self._make_request("GET",endpoint,data)
         
         if order_status is not None:
-            order_status = OrderStatus(order_status)
+            order_status = OrderStatus(order_status,"binance")
 
         return order_status
 
