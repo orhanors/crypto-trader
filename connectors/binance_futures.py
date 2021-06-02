@@ -85,7 +85,7 @@ class BinanceFuturesClient:
         contracts = dict()
         if exchange_info is not None:
             for contract_data in exchange_info["symbols"]:
-                contracts[contract_data["pair"]] = Contract(contract_data, "binance")
+                contracts[contract_data["symbol"]] = Contract(contract_data, "binance")
 
         return contracts
 
@@ -243,7 +243,7 @@ class BinanceFuturesClient:
                     self.prices[symbol]["bid"] = float(data["b"])
                     self.prices[symbol]["ask"] = float(data["a"])
                 
-                print(self.prices[symbol])
+                #print(self.prices[symbol])
 
     def subscribe_channel(self,contracts: typing.List[Contract],channel:str):
         data = dict()

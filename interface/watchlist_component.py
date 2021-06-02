@@ -27,16 +27,16 @@ class Watchlist(tk.Frame):
 
         self._bitmex_label = tk.Label(self._commands_frame,text="BITMEX", bg=BG_COLOR,fg=FG_COLOR,font=BOLD_FONT)
         self._bitmex_label.grid(row=0,column=1)
-        self._bitmex_entry.bind("<Return>",self._add_bitmex_symbol)
         
         self._bitmex_entry = tk.Entry(self._commands_frame,bg=BG_COLOR_2, fg=FG_COLOR, justify=tk.CENTER, insertbackground=FG_COLOR)
         self._bitmex_entry.grid(row=1,column=1)
+        self._bitmex_entry.bind("<Return>",self._add_bitmex_symbol)
         
         self.body_widgets = dict()
-        self._headers = ["symbol","headers","bid","ask"]
+        self._headers = ["symbol","exchange","bid","ask","remove"]
 
         for idx, header in enumerate(self._headers):
-            header = tk.Label(self._table_frame,text=header.capitalize(), bg=BG_COLOR, fg=FG_COLOR, font=BOLD_FONT)
+            header = tk.Label(self._table_frame,text=header.capitalize() if header != "remove" else "", bg=BG_COLOR, fg=FG_COLOR, font=BOLD_FONT)
             header.grid(row=0, column=idx)
         
         for h in self._headers:
@@ -47,6 +47,12 @@ class Watchlist(tk.Frame):
         
         self._body_index = 1
 
+    def _remove_symbol(self,b_index: int):
+
+        for h in self._headers:
+            self.body_widgets[h][b_index].grid_forget()
+            del self.body_widgets[h][b_index]
+    
     def _add_binance_symbol(self,event):
         symbol = event.widget.get()
         
@@ -69,15 +75,18 @@ class Watchlist(tk.Frame):
         self.body_widgets["symbol"][b_index] = tk.Label(self._table_frame,text=symbol, bg = BG_COLOR, fg=FG_COLOR_2, font= GLOBAL_FONT)
         self.body_widgets["symbol"][b_index].grid(row=b_index,column=0)
         
-        self.body_widgets["exchange"][b_index] = tk.Label(self._table_frame,text=symbol, bg = BG_COLOR, fg=FG_COLOR_2, font= GLOBAL_FONT)
+        self.body_widgets["exchange"][b_index] = tk.Label(self._table_frame,text=exchange, bg = BG_COLOR, fg=FG_COLOR_2, font= GLOBAL_FONT)
         self.body_widgets["exchange"][b_index].grid(row=b_index,column=1)
 
         self.body_widgets["bid_var"][b_index] = tk.StringVar()
         self.body_widgets["bid"][b_index] = tk.Label(self._table_frame,textvariable=self.body_widgets["bid_var"][b_index], bg = BG_COLOR, fg=FG_COLOR_2, font= GLOBAL_FONT)
         self.body_widgets["bid"][b_index].grid(row=b_index,column=2)
 
-        self.body_widgets["bid_var"][b_index] = tk.StringVar()
+        self.body_widgets["ask_var"][b_index] = tk.StringVar()
         self.body_widgets["ask"][b_index] = tk.Label(self._table_frame,textvariable=self.body_widgets["bid_var"][b_index], bg = BG_COLOR, fg=FG_COLOR_2, font= GLOBAL_FONT)
         self.body_widgets["ask"][b_index].grid(row=b_index,column=3)
+
+        self.body_widgets["remove"][b_index] = tk.Button(self._table_frame,text="X", bg = "darkred", fg=FG_COLOR, font= GLOBAL_FONT,command=  lambda: self._remove_symbol(b_index) )
+        self.body_widgets["remove"][b_index].grid(row=b_index,column=4)
 
         self._body_index += 1
