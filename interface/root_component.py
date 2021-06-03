@@ -1,3 +1,4 @@
+from interface.strategy_component import StrategyEditor
 import logging
 import time
 import tkinter as tk
@@ -9,9 +10,9 @@ from connectors.bitmex import BitmexClient
 from interface.styling import *
 from interface.logging_component import Logging
 from interface.watchlist_component import Watchlist
+from interface.trades_component import TradesWatch
 
-
-logger = logging.getLoggee()
+logger = logging.getLogger()
 class Root(tk.Tk):
     def __init__(self,binance: BinanceFuturesClient, bitmex: BitmexClient):
         super().__init__()
@@ -34,7 +35,14 @@ class Root(tk.Tk):
 
         self._logging_frame = Logging(self._left_frame,bg=BG_COLOR)
         self._logging_frame.pack(side=tk.TOP)
+        
+        self._strategy_frame = StrategyEditor(self._right_frame,bg=BG_COLOR)
+        self._strategy_frame.pack(side=tk.TOP)
 
+        self._trades_frame = TradesWatch(self._right_frame,bg=BG_COLOR)
+        self._trades_frame.pack(side=tk.TOP)
+        
+       
         self._update_ui()
 
     def _update_ui(self):
@@ -82,23 +90,20 @@ class Root(tk.Tk):
                     
                     precision = self.bitmex.contracts[symbol].price_decimals
                     prices = self.bitmex.prices[symbol]
-        
+
+                else:
+                    continue
+            
+                if prices["bid"] is not None:
+                    price_str = "{0:.{prec}f}".format(prices["bid"],prec=precision)
+                    self._watchlist_frame.body_widgets["bid_var"][key].set(price_str)
+            
+                if prices["ask"] is not None:
+                
+                    price_str = "{0:.{prec}f}".format(prices["ask"],prec=precision)
+                    self._watchlist_frame.body_widgets["ask_var"][key].set(price_str)
         except RuntimeError as e:
             logger.error("Error while looping through watchlist dictionary: %s",e)
-
-
-            else:
-                continue
-
-            
-            if prices["bid"] is not None:
-                price_str = "{0:.{prec}f}".format(prices["bid"],prec=precision)
-                self._watchlist_frame.body_widgets["bid_var"][key].set(price_str)
-            
-            if prices["ask"] is not None:
-                
-                price_str = "{0:.{prec}f}".format(prices["ask"],prec=precision)
-                self._watchlist_frame.body_widgets["ask_var"][key].set(price_str)
 
         
         

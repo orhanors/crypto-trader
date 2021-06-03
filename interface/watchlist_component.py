@@ -86,7 +86,7 @@ class Watchlist(tk.Frame):
         self.body_widgets["ask"][b_index] = tk.Label(self._table_frame,textvariable=self.body_widgets["bid_var"][b_index], bg = BG_COLOR, fg=FG_COLOR_2, font= GLOBAL_FONT)
         self.body_widgets["ask"][b_index].grid(row=b_index,column=3)
 
-        self.body_widgets["remove"][b_index] = tk.Button(self._table_frame,text="X", bg = "darkred", fg=FG_COLOR, font= GLOBAL_FONT,command=  lambda: self._remove_symbol(b_index) )
+        self.body_widgets["remove"][b_index] = tk.Button(self._table_frame,text=REMOVE_ICON, bg = DANGER_COLOR, fg=FG_COLOR, font= GLOBAL_FONT,command=  lambda: self._remove_symbol(b_index) )
         self.body_widgets["remove"][b_index].grid(row=b_index,column=4)
 
         self._body_index += 1
