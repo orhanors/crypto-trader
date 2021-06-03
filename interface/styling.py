@@ -13,3 +13,4 @@ FG_COLOR = "white"
 FG_COLOR_2 = "SteelBlue1"
 
 DANGER_COLOR = "darkred"
+SUCCESS_COLOR = "darkgreen"
