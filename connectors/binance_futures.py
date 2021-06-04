@@ -34,10 +34,15 @@ class BinanceFuturesClient:
         self._ws_id = 1
         self._ws = None
 
+        self.logs = []
         #multithreading to run websocket connection
         t = threading.Thread(target=self._start_ws)
         t.start()
-
+    
+    def _add_log(self,msg: str):
+        logger.info("%s",msg)
+        self.logs.append({"log":msg, "displayed":False})
+        
     def _generate_signature(self,data: typing.Dict) -> str:
         return hmac.new(self._secret_key.encode(),urlencode(data).encode(),hashlib.sha256).hexdigest()
 
@@ -80,7 +85,7 @@ class BinanceFuturesClient:
         contracts = dict()
         if exchange_info is not None:
             for contract_data in exchange_info["symbols"]:
-                contracts[contract_data["pair"]] = Contract(contract_data, "binance")
+                contracts[contract_data["symbol"]] = Contract(contract_data, "binance")
 
         return contracts
 
@@ -91,7 +96,7 @@ class BinanceFuturesClient:
         data["symbol"] = contract.symbol
 
         order_book_data = self._make_request("GET",endpoint,data)
-
+    
         if order_book_data is not None:
             if contract.symbol not in self.prices:
                 self.prices[contract.symbol] = {"bid": float(order_book_data["bidPrice"]),"ask": float(order_book_data["askPrice"])}
@@ -238,7 +243,7 @@ class BinanceFuturesClient:
                     self.prices[symbol]["bid"] = float(data["b"])
                     self.prices[symbol]["ask"] = float(data["a"])
                 
-                print(self.prices[symbol])
+                #print(self.prices[symbol])
 
     def subscribe_channel(self,contracts: typing.List[Contract],channel:str):
         data = dict()
