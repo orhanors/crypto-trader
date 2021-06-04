@@ -96,7 +96,7 @@ class BinanceFuturesClient:
         data["symbol"] = contract.symbol
 
         order_book_data = self._make_request("GET",endpoint,data)
-
+    
         if order_book_data is not None:
             if contract.symbol not in self.prices:
                 self.prices[contract.symbol] = {"bid": float(order_book_data["bidPrice"]),"ask": float(order_book_data["askPrice"])}

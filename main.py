@@ -42,4 +42,5 @@ if __name__ == "__main__":
 
 
     root = Root(binance,bitmex)  # main window
+    root.attributes("-zoomed",True)
     root.mainloop()  # infinite loop waits for user interaction

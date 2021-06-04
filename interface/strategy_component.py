@@ -70,8 +70,6 @@ class StrategyEditor(tk.Frame):
 
                             {"code_name":"delete","widget":tk.Button,"data_type":float,
                             "text":REMOVE_ICON, "bg": DANGER_COLOR,"command":self._delete_row},
-
-
         
         ]
         
@@ -106,9 +104,9 @@ class StrategyEditor(tk.Frame):
 
         self._body_index = 1
 
-
-    def _add_strategy_row(self):
         
+    def _add_strategy_row(self):
+       
         b_index = self._body_index
 
         for col, base_param in enumerate(self._base_params):
@@ -147,11 +145,10 @@ class StrategyEditor(tk.Frame):
             else:
                 continue
             
-            if base_param["widget"] == ttk.Combobox:
-                self.body_widgets[code_name][b_index].grid(row=b_index,column=col,padx=15, pady=15)
+            
+            self.body_widgets[code_name][b_index].grid(row=b_index,column=col,padx=15, pady=15)
 
-            else:
-                self.body_widgets[code_name][b_index].grid(row=b_index,column=col,padx=15, pady=15)
+           
 
         
         self._additional_parameters[b_index] = dict()
@@ -161,7 +158,7 @@ class StrategyEditor(tk.Frame):
                 self._additional_parameters[b_index][param["code_name"]] = None
 
         self._body_index += 1
-                
+         
     def _delete_row(self, b_index: int):
         
         for element in self._base_params:
