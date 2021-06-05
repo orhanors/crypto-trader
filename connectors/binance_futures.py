@@ -1,3 +1,4 @@
+from strategies import BreakoutStrategy, TechnicalStrategy
 from urllib.parse import urlencode
 from models import *
 import typing
@@ -30,6 +31,7 @@ class BinanceFuturesClient:
         self.balances = self.get_balance()
 
         self.prices = dict()
+        self.strategies: typing.Dict[int, typing.Union[TechnicalStrategy,BreakoutStrategy]] = dict()
 
         self._ws_id = 1
         self._ws = None
@@ -220,6 +222,7 @@ class BinanceFuturesClient:
         logger.info("Binance webSocket connection opened")
 
         self.subscribe_channel(list(self.contracts.values()),"bookTicker")
+        self.subscribe_channel(list(self.contracts.values()),"aggTrade")
     
     def _on_close(self,ws):
         logger.warning("Binance websocket connection closed")
@@ -242,6 +245,15 @@ class BinanceFuturesClient:
                 else:
                     self.prices[symbol]["bid"] = float(data["b"])
                     self.prices[symbol]["ask"] = float(data["a"])
+
+            
+            elif data["e"] == "aggTrade":
+
+                symbol = data["s"]
+
+                for key,strat in self.strategies.items():
+                    if strat.contract.symbol == symbol:
+                        strat.parse_trades(float(data["p"]),float(data["q"]),data["T"])
                 
                 #print(self.prices[symbol])
 
