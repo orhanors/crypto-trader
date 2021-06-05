@@ -142,7 +142,7 @@ class BinanceFuturesClient:
         data["timestamp"] = self._generate_timestamp()
         data["signature"] = self._generate_signature(data)
 
-        order_status = self._make_request("POST",endpoint,data)
+        order_status = self._make_request("POST",endpoint,data) 
 
         if order_status is not None:
             order_status = OrderStatus(order_status,"binance")
