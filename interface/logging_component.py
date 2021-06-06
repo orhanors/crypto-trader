@@ -13,7 +13,9 @@ class Logging(tk.Frame):
         self.logging_text.pack(side=tk.TOP)
 
     def add_log(self, message: str):
+        # Unlocks the tk.Text widgets
         self.logging_text.configure(state=tk.NORMAL)
         self.logging_text.insert("1.0", datetime.utcnow().strftime(
             "%a %H:%M:%S :: ") + message + "\n")
+        # Locks the tk.Text widget to avoid accidentally inserting in it
         self.logging_text.configure(state=tk.DISABLED)
