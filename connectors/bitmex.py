@@ -15,9 +15,10 @@ import dateutil.parser
 
 logger = logging.getLogger()
 
+
 class BitmexClient:
-    def __init__(self,is_testnet:bool, public_key:str, secret_key:str):
-        
+    def __init__(self, is_testnet: bool, public_key: str, secret_key: str):
+
         if is_testnet:
             self._base_url = "https://testnet.bitmex.com"
             self._wss_url = "wss://testnet.bitmex.com/realtime"
@@ -32,22 +33,23 @@ class BitmexClient:
         self.balances = self.get_balances()
 
         self.prices = dict()
-        self.strategies: typing.Dict[int, typing.Union[TechnicalStrategy,BreakoutStrategy]] = dict()
+        self.strategies: typing.Dict[int,
+                                     typing.Union[TechnicalStrategy, BreakoutStrategy]] = dict()
 
         self._ws = None
-        
+
         self.logs = []
 
         t = threading.Thread(target=self._start_ws)
         t.start()
 
         logger.info("Bitmex Client successfully initialized")
-        
-    def _add_log(self,msg:str):
-        logger.info("%s",msg)
-        self.logs.append({"log":msg,"displayed":False})
 
-    def _generate_signature(self,method: str, endpoint: str, expires: str, data: typing.Dict) -> str:
+    def _add_log(self, msg: str):
+        logger.info("%s", msg)
+        self.logs.append({"log": msg, "displayed": False})
+
+    def _generate_signature(self, method: str, endpoint: str, expires: str, data: typing.Dict) -> str:
         """
         Generates an `api-signature` value to make an auth request
 
@@ -60,10 +62,12 @@ class BitmexClient:
         Returns:
             str: `api-signature` value to make a authenticated request
         """
-        message = method + endpoint + "?" + urlencode(data) + expires if len(data) > 0 else method + endpoint + expires
+        message = method + endpoint + "?" + \
+            urlencode(data) + expires if len(data) > 0 else method + \
+            endpoint + expires
         return hmac.new(self._secret_key.encode(), message.encode(), hashlib.sha256).hexdigest()
 
-    def _generate_headers(self,method:str, endpoint: str,data:typing.Dict) -> typing.Dict:
+    def _generate_headers(self, method: str, endpoint: str, data: typing.Dict) -> typing.Dict:
         """
         Generates "headers" dictionary to make a call for Bitmex endpoints
 
@@ -74,179 +78,180 @@ class BitmexClient:
         expires = str(int(time.time())+5)
         headers["api-expires"] = expires
         headers["api-key"] = self._public_key
-        headers["api-signature"] = self._generate_signature(method,endpoint,expires,data)
+        headers["api-signature"] = self._generate_signature(
+            method, endpoint, expires, data)
         return headers
 
-    def _make_request(self,method: str,endpoint: str,data: typing.Dict):
-        
-        headers = self._generate_headers(method,endpoint,data)
+    def _make_request(self, method: str, endpoint: str, data: typing.Dict):
 
-        if method in ["GET","get"]:
+        headers = self._generate_headers(method, endpoint, data)
+
+        if method in ["GET", "get"]:
             try:
-                response = requests.get(self._base_url+endpoint,params=data,headers=headers)
+                response = requests.get(
+                    self._base_url+endpoint, params=data, headers=headers)
             except Exception as e:
-                logger.error("Connection error while making %s request to %s endpoint: %s",method,endpoint,e)
+                logger.error(
+                    "Connection error while making %s request to %s endpoint: %s", method, endpoint, e)
                 return None
-        
-        elif method in ["POST","post"]:
+
+        elif method in ["POST", "post"]:
             try:
-                response = requests.post(self._base_url + endpoint,params=data,headers=headers)
+                response = requests.post(
+                    self._base_url + endpoint, params=data, headers=headers)
             except:
-                logger.error("Connection error while making %s request to %s endpoint: %s",method,endpoint,e)
+                logger.error(
+                    "Connection error while making %s request to %s endpoint: %s", method, endpoint, e)
                 return None
 
-        elif method in ["DELETE","delete"]:
+        elif method in ["DELETE", "delete"]:
             try:
-                response = requests.delete(self._base_url + endpoint,params=data,headers=headers)
+                response = requests.delete(
+                    self._base_url + endpoint, params=data, headers=headers)
             except Exception as e:
-                logger.error("Connection error while making %s request to %s endpoint: %s",method,endpoint,e)
+                logger.error(
+                    "Connection error while making %s request to %s endpoint: %s", method, endpoint, e)
                 return None
         else:
             raise ValueError()
-        
 
-        print(response.json())
         if response.status_code == 200:
             return response.json()
         else:
-            logger.error("Error while making %s request to %s endpoint: (error code: %s) --> %s",method,endpoint,response.status_code,response.json())
+            logger.error("Error while making %s request to %s endpoint: (error code: %s) --> %s",
+                         method, endpoint, response.status_code, response.json())
             return None
-            
-    def get_contracts(self) -> typing.Dict[str,Contract]:
+
+    def get_contracts(self) -> typing.Dict[str, Contract]:
         endpoint = "/api/v1/instrument/active"
-        instruments = self._make_request("GET",endpoint,dict())
+        instruments = self._make_request("GET", endpoint, dict())
 
         contracts = dict()
 
         if instruments is not None:
             for s in instruments:
-                contracts[s["symbol"]] = Contract(s,"bitmex")
-        
+                contracts[s["symbol"]] = Contract(s, "bitmex")
+
         return contracts
 
-    def get_balances(self) -> typing.Dict[str,Balance]:
+    def get_balances(self) -> typing.Dict[str, Balance]:
         endpoint = "/api/v1/user/margin"
 
         data = dict()
         data["currency"] = "all"
 
-        margin_data = self._make_request("GET",endpoint,data)
+        margin_data = self._make_request("GET", endpoint, data)
 
         balances = dict()
         if margin_data is not None:
             for a in margin_data:
                 balances[a["currency"]] = Balance(a, "bitmex")
-        
+
         return balances
 
-    
-    def get_historical_data(self, contract:Contract, timeframe:str) -> typing.List[Candle]:
+    def get_historical_data(self, contract: Contract, timeframe: str) -> typing.List[Candle]:
         endpoint = "/api/v1/trade/buckedet"
-        
+
         data = dict()
         data["symbol"] = contract.symbol
         data["partial"] = True
         data["binSize"] = timeframe
         data["count"] = 500
 
-        raw_candles = self._make_request("GET",endpoint,data)
+        raw_candles = self._make_request("GET", endpoint, data)
 
         candles = []
 
         if raw_candles is not None:
             for c in reversed(raw_candles):
-                candles.append(Candle(c,timeframe,"bitmex"))
+                candles.append(Candle(c, timeframe, "bitmex"))
 
         return candles
 
-    
-    def place_order(self,contract: Contract, order_type: str, quantity: int, side: str, price= None, tif = None) -> OrderStatus:
+    def place_order(self, contract: Contract, order_type: str, quantity: int, side: str, price=None, tif=None) -> OrderStatus:
         endpoint = "/api/v1/order"
 
         data = dict()
         data["symbol"] = contract.symbol
         data["side"] = side.capitalize()
-        data["orderQty"] = round(quantity / contract.lot_size) * contract.lot_size
+        data["orderQty"] = round(
+            quantity / contract.lot_size) * contract.lot_size
         data["ordType"] = order_type.capitalize
 
         if price is not None:
-            data["price"] = round(round(price / contract.tick_size) * contract.tick_size,8)
+            data["price"] = round(
+                round(price / contract.tick_size) * contract.tick_size, 8)
 
         if tif is not None:
             data["tif"] = tif
 
-        order_status = self._make_request("POST",endpoint,data)
+        order_status = self._make_request("POST", endpoint, data)
 
         if order_status is not None:
-            order_status = OrderStatus(order_status,"bitmex")
-        
+            order_status = OrderStatus(order_status, "bitmex")
+
         return order_status
-        
 
-
-    def cancel_order(self,order_id: str) -> OrderStatus:
+    def cancel_order(self, order_id: str) -> OrderStatus:
         endpoint = "/api/v1/order"
 
         data = dict()
         data["orderID"] = order_id
-       
-        order_status = self._make_request("DELETE",endpoint,data)
+
+        order_status = self._make_request("DELETE", endpoint, data)
 
         if order_status is not None:
-            #we can cancel more than one in one api call, but we will do one by one
-            order_status = OrderStatus(order_status[0],"bitmex")
-        
+            # we can cancel more than one in one api call, but we will do one by one
+            order_status = OrderStatus(order_status[0], "bitmex")
+
         return order_status
-        
 
-
-
-    def get_order_status(self, order_id:str, contract: Contract):
+    def get_order_status(self, order_id: str, contract: Contract):
         endpoint = "/api/v1/order"
 
         data = dict()
         data["symbol"] = contract.symbol
-        data["reverse"] = True #returns recent orders first
+        data["reverse"] = True  # returns recent orders first
 
-        order_status = self._make_request("GET",endpoint,data)
+        order_status = self._make_request("GET", endpoint, data)
 
         if order_status is not None:
             for order in order_status:
                 if order["orderID"] == order_id:
-                    return OrderStatus(order,"bitmex")
+                    return OrderStatus(order, "bitmex")
 
-    
     def _start_ws(self):
         """
         Starts websocket connection
         If it fails when creating forever loop, waits 2 secs and restarts the loop again
         """
-        self._ws = websocket.WebSocketApp(self._wss_url,on_open=self._on_open,on_close=self._on_close,on_error=self._on_error,on_message=self._on_message)
+        self._ws = websocket.WebSocketApp(self._wss_url, on_open=self._on_open,
+                                          on_close=self._on_close, on_error=self._on_error, on_message=self._on_message)
 
         while True:
             try:
                 self._ws.run_forever()
 
             except Exception as e:
-                logger.error("Bitmex websocket error: %s",e)
-            
+                logger.error("Bitmex websocket error: %s", e)
+
             time.sleep(2)
 
-    def _on_open(self,ws):
+    def _on_open(self, ws):
         logger.info("Bitmex webSocket connection opened")
 
-        #we subscribe whole feed
+        # we subscribe whole feed
         self.subscribe_channel("instrument")
         self.subscribe_channel("trade")
-    
-    def _on_close(self,ws):
+
+    def _on_close(self, ws):
         logger.warning("Bitmex websocket connection closed")
 
-    def _on_error(self,ws,msg: str):
-        logger.error("Bitmex websokcet connection error: %s",msg)
+    def _on_error(self, ws, msg: str):
+        logger.error("Bitmex websokcet connection error: %s", msg)
 
-    def _on_message(self,ws,msg: str):
-        #print(msg)
+    def _on_message(self, ws, msg: str):
+        # print(msg)
 
         data = json.loads(msg)
 
@@ -256,40 +261,37 @@ class BitmexClient:
                     symbol = d["symbol"]
 
                     if symbol not in self.prices:
-                        self.prices[symbol] = {"bid": None,"ask":None}
+                        self.prices[symbol] = {"bid": None, "ask": None}
 
                     if "bidPrice" in d:
                         self.prices[symbol]["bid"] = d["bidPrice"]
                     if "askPrice" in d:
                         self.prices[symbol]["ask"] = d["askPrice"]
-                    
 
             if data["table"] == "trade":
 
                 for d in data["data"]:
-                      symbol = d["symbol"]
+                    symbol = d["symbol"]
 
-                      ts = int(dateutil.parser.isoparse(d["timestamp"]).timestamp() * 1000)
+                    ts = int(dateutil.parser.isoparse(
+                        d["timestamp"]).timestamp() * 1000)
 
-                      for key,strat in self.strategies.items():
-                            if strat.contract.symbol == symbol:
-                                strat.parse_trades(float(data["price"]),float(data["size"]),ts)
+                    for key, strat in self.strategies.items():
+                        if strat.contract.symbol == symbol:
+                            strat.parse_trades(
+                                float(data["price"]), float(data["size"]), ts)
 
+                    # print(self.prices[symbol])
 
-                    
-                    #print(self.prices[symbol])
-
-    def subscribe_channel(self,topic:str):
+    def subscribe_channel(self, topic: str):
         data = dict()
         data["op"] = "subscribe"
         data["args"] = []
-       
+
         data["args"].append(topic)
-        
-        
+
         try:
             self._ws.send(json.dumps(data))
         except Exception as e:
-            logger.error("Websocket error while subscribing to %s: %s",topic,e)
-
-       
+            logger.error(
+                "Websocket error while subscribing to %s: %s", topic, e)
